@@ -21,6 +21,9 @@ class Engine():
             else:
                 self.current_actor = (
                     self.current_actor + 1) % len(self.entities)
+        else:
+            self.current_actor = (
+                self.current_actor + 1) % len(self.entities)
 
         action = actor.get_action()
         if action is not None:

@@ -35,11 +35,7 @@ class WalkAction(Action):
                 occupant = a
 
         if occupant:
-            is_player = self.actor.get_component(components.IsPlayer)
-            if is_player:
-                return ActionResult(False, PosessAction(self.actor, occupant))
-            else:
-                return ActionResult(False, MeleeAttackAction(self.actor, occupant))
+            return ActionResult(False, MeleeAttackAction(self.actor, occupant))
 
         if tile_is_blocked == False and occupant is None:
             self.actor.x += self.dx
@@ -117,6 +113,17 @@ class KillAction (Action):
         return ActionResult(True)
 
 
+class BumpAction (Action):
+    def __init__(self, actor, x, y):
+        self.actor = actor
+        self.x = x
+        self.y = y
+
+    def perform(self):
+        print("BUMP!")
+        return ActionResult(True)
+
+
 class PosessAction (Action):
     def __init__(self, attacker, defender):
         self.attacker = attacker
@@ -128,16 +135,6 @@ class PosessAction (Action):
         self.defender.add_component(components.IsPlayer())
         return ActionResult(True)
 
-
-class BumpAction (Action):
-    def __init__(self, actor, x, y):
-        self.actor = actor
-        self.x = x
-        self.y = y
-
-    def perform(self):
-        print("BUMP!")
-        return ActionResult(True)
 
 #  _   _ _____ _     ____  _____ ____  ____
 # | | | | ____| |   |  _ \| ____|  _ \/ ___|

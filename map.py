@@ -1,9 +1,10 @@
-from os import X_OK
-import constants
+
+from constants import *
 import pygame
 import random
-from sprites import *
+import sprites
 import fov
+import entity_factory
 
 
 class Tile:
@@ -22,47 +23,49 @@ class Tile:
             if visited:
                 sprite = self.dark_sprite
         if sprite:
-            surface.blit(sprite, (x * constants.CELL_WIDTH, y * constants.CELL_HEIGHT))
+            surface.blit(sprite, (x * CELL_WIDTH,
+                         y * CELL_HEIGHT))
+
 
 class Map:
     def __init__(self, width, height, tileset):
-        self.width = constants.MAP_WIDTH
-        self.height = constants.MAP_HEIGHT
+        self.width = MAP_WIDTH
+        self.height = MAP_HEIGHT
         self.rooms = []
+        self.entities = []
 
         self.tileset = tileset
 
         self.tiles = self.fill_with_solid(self.width, self.height)
         self.visited = {}
         self.fov = {}
-        
-        self.create_roomed_maze(constants.MAP_WIDTH, constants.MAP_HEIGHT, constants.MAX_ROOMS,
-                                constants.MIN_ROOM_SIZE, constants.MAX_ROOM_SIZE)
+
+        self.create_roomed_maze(MAP_WIDTH, MAP_HEIGHT, MAX_ROOMS,
+                                MIN_ROOM_SIZE, MAX_ROOM_SIZE)
 
     def update_fov(self, x, y, sight_range):
-        self.fov = fov.FOV_Bresenham(x, y, sight_range, self)        
+        self.fov = fov.FOV_Bresenham(x, y, sight_range, self)
 
     def draw(self, surface):
-        for x in range(0, constants.MAP_WIDTH):
-            for y in range(0, constants.MAP_HEIGHT):
-                in_fov = (x,y) in self.fov
-                visited = (x,y) in self.visited
+        for y in range(0, MAP_HEIGHT):
+            for x in range(0, MAP_WIDTH):
+                in_fov = (x, y) in self.fov
+                visited = (x, y) in self.visited
                 if in_fov and not visited:
-                    self.visited[x,y] = True
+                    self.visited[x, y] = True
 
-                self.tiles[x][y].draw(surface,x,y,in_fov,visited)
+                self.tiles[x][y].draw(surface, x, y, in_fov, visited)
 
     def in_bounds(self, x, y):
         return 0 <= x < self.width and 0 <= y < self.height
 
     def in_fov(self, x, y):
-        return (x,y) in self.fov
-            
+        return (x, y) in self.fov
 
     def get_empty_position(self):
         tileFound = False
         tile = None
-        x,y = 0,0
+        x, y = 0, 0
         while (tileFound == False):
             x = random.randint(1, self.width-1)
             y = random.randint(1, self.height-1)
@@ -110,7 +113,7 @@ class Map:
             x = random.randint(0, map_width - w - 1)
             y = random.randint(0, map_height - h - 1)
 
-            room = RectangularRoom(x, y, w, h)
+            room = RectangularRoom(x, y, w, h, self)
             for r in rooms:
                 if room.intersect(r):
                     break
@@ -128,7 +131,11 @@ class Map:
                         self.create_vertical_tunnel(last_y, y, last_x)
                         self.create_horizontal_tunnel(last_x, x, y)
                 rooms.append(room)
-        
+
+        for room in rooms:
+            x, y = room.get_empty_position()
+            entity_factory.A_Creature(x, y, self)
+
         self.rooms = rooms
 
     def create_horizontal_tunnel(self, x1, x2, y):
@@ -140,10 +147,12 @@ class Map:
         for y in range(min(y1, y2), max(y1, y2) + 1):
             self.tiles[x][y] = self.tileset.floor
 
+
 class RectangularRoom:
-    def __init__(self, x, y, width, height):
+    def __init__(self, x, y, width, height, current_map):
         self.x1, self.y1 = x, y
         self.x2, self.y2 = x + width, y + height
+        self.current_map = current_map
 
     def center(self):
         centerx = (self.x1 + self.x2) // 2
@@ -153,15 +162,26 @@ class RectangularRoom:
     def carve_room(self, map):
         for x in range(self.x1 + 1, self.x2):
             for y in range(self.y1 + 1, self.y2):
-                map.tiles[x][y]  = map.tileset.floor
+                map.tiles[x][y] = map.tileset.floor
 
     def intersect(self, other):
         return self.x1 <= other.x2 and self.x2 >= other.x1 and self.y1 <= other.y2 and self.y2 >= other.y1
 
+    def get_empty_position(self):
+        tileFound = False
+        tile = None
+        x, y = 0, 0
+        while (tileFound == False):
+            x = random.randint(self.x1+1, self.x2-1)
+            y = random.randint(self.y1+1, self.y2-1)
+            tile = self.current_map.tiles[x][y]
+            tileFound = tile.block_path == False
+        return x, y
+
 
 class DungeonTileSet:
     def __init__(self):
-        sprites = Sprites()
-        self.wall = Tile(sprites.WALL,sprites.WALL_DARK,True,True)
-        self.floor = Tile(sprites.FLOOR,sprites.FLOOR_DARK,False,False)
-
+        self.wall = Tile(sprites.fake_sprite(COLOR_WHITE),
+                         sprites.fake_sprite(COLOR_WHITE_DARKER), True, True)
+        self.floor = Tile(sprites.fake_sprite(COLOR_GREY),
+                          sprites.fake_sprite(COLOR_GREY_DARKER), False, False)

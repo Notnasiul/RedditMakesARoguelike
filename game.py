@@ -1,5 +1,5 @@
 import pygame
-import constants
+from constants import *
 
 from engine import Engine
 from sprites import *
@@ -9,23 +9,16 @@ import entity_factory
 
 def game():
     pygame.init()
-
-    main_surface = pygame.display.set_mode((
-        constants.MAP_WIDTH * constants.SPRITE_SIZE,
-        constants.MAP_HEIGHT * constants.SPRITE_SIZE))
+    main_surface = pygame.display.set_mode(
+        (GAME_WIDTH, GAME_HEIGHT))
     pygame.display.set_caption("Reddit makes a roguelike")
 
-    sprites = Sprites()
-    current_map = Map(constants.MAP_WIDTH,
-                      constants.MAP_HEIGHT, DungeonTileSet())
+    current_map = Map(MAP_WIDTH, MAP_HEIGHT, DungeonTileSet())
 
     x, y = current_map.get_empty_position()
-    player = entity_factory.A_Player(sprites, x, y)
-    x, y = current_map.get_empty_position()
-    creature = entity_factory.A_Creature(sprites, x, y)
+    player = entity_factory.A_Player(x, y, current_map)
 
-    entities = [player, creature]
-    engine = Engine(current_map, entities)
+    engine = Engine(current_map)
 
     while (True):
         engine.update()

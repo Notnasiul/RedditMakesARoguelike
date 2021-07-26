@@ -1,21 +1,25 @@
 import constants
 
+
 class Actor:
-    def __init__ (self, x, y, name, components):
+    def __init__(self, x, y, name, components, behaviour, map):
         self.x = x
         self.y = y
         self.name = name
+        if map:
+            map.entities.append(self)
 
         self.next_action = None
         self.components = {}
         if components != None:
             self.add_components(components)
+        self.behaviour = behaviour
 
-    def add_components (self, components):
+    def add_components(self, components):
         for component in components:
             self.add_component(component)
 
-    def add_component (self, component):
+    def add_component(self, component):
         self.components[component.__class__.__name__] = component
 
     def get_component(self, component):
@@ -29,5 +33,3 @@ class Actor:
         action = self.next_action
         self.next_action = None
         return action
-
-   

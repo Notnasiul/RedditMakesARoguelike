@@ -6,15 +6,15 @@ import constants
 import components
 
 
-class Brain():
-    def __init__(self, strategy):
-        self.strategy = strategy
+class Behaviour():
+    def __init__(self):
+        pass
 
     def evaluate(self, actor, map, engine):
         self.strategy.evaluate(actor, map, engine)
 
 
-class KeyboardMouseInputStrategy():
+class KeyboardMouseInputBehaviour(Behaviour):
     def evaluate(self, actor, current_map, engine):
         current_map.update_fov(actor.x, actor.y, 5)
         events_list = pygame.event.get()
@@ -52,7 +52,7 @@ class KeyboardMouseInputStrategy():
                         weapon, actor, (cellX, cellY), engine)
 
 
-class RandomWalkStrategy():
+class RandomWalkBehaviour():
     def evaluate(self, actor, map, engine):
         dx = random.randint(-1, 1)
         dy = 0 if dx != 0 else random.randint(-1, 1)

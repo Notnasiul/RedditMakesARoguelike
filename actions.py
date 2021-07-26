@@ -30,21 +30,21 @@ class WalkAction(Action):
         tile_is_blocked = current_map.tiles[xx][yy].block_path == True
         occupant = None
 
-        for a in self.engine.entities:
+        for a in current_map.entities:
             if (a.x == xx and a.y == yy and a is not self.actor):
                 occupant = a
 
         if occupant:
             return ActionResult(False, MeleeAttackAction(self.actor, occupant))
-
-        if tile_is_blocked == False and occupant is None:
-            self.actor.x += self.dx
-            self.actor.y += self.dy
-            self.endingPosition = (
-                self.actor.x + self.dx, self.actor.y + self.dy)
-            return ActionResult(True)
         else:
-            return ActionResult(False, BumpAction(self.actor, xx, yy))
+            if tile_is_blocked == False:
+                self.actor.x += self.dx
+                self.actor.y += self.dy
+                self.endingPosition = (
+                    self.actor.x + self.dx, self.actor.y + self.dy)
+                return ActionResult(True)
+            else:
+                return ActionResult(False, BumpAction(self.actor, xx, yy))
 
 
 class MeleeAttackAction (Action):

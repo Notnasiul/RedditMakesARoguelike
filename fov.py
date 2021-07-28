@@ -61,7 +61,7 @@ def FOV_Bresenham(px, py, sight_range, map):
     fov = {}
     for x in range(px-sight_range, px+sight_range, 1):
         for y in range(py-sight_range, py+sight_range, 1):
-            
+
             if map.in_bounds(x, y) == False:
                 continue
             line = get_line((px, py), (x, y))

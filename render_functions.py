@@ -10,4 +10,4 @@ def render_bar(surface, x, y, value, max_value, text, width, height, border, bkg
     small_font = pygame.font.SysFont('arial', 12)
     label = small_font.render(
         f"{text}: {value}/{max_value}", True, txt_color)
-    surface.blit(label, (x+border*2, y+border*2))
+    surface.blit(label, (x+border*2, y + height/2 - 6))

@@ -9,7 +9,7 @@ import entity_factory
 
 class Tile:
     def __init__(self, lit_sprite, dark_sprite, blocks_path, blocks_sight):
-        self.block_path = blocks_path
+        self.blocks_path = blocks_path
         self.blocks_sight = blocks_sight
         self.explored = False
         self.lit_sprite = lit_sprite
@@ -33,6 +33,7 @@ class Map:
         self.height = MAP_HEIGHT
         self.rooms = []
         self.entities = []
+        self.items = []
 
         self.tileset = tileset
 
@@ -45,16 +46,6 @@ class Map:
 
     def update_fov(self, x, y, sight_range):
         self.fov = fov.FOV_Bresenham(x, y, sight_range, self)
-
-    def draw(self, surface):
-        for y in range(0, MAP_HEIGHT):
-            for x in range(0, MAP_WIDTH):
-                in_fov = (x, y) in self.fov
-                visited = (x, y) in self.visited
-                if in_fov and not visited:
-                    self.visited[x, y] = True
-
-                self.tiles[x][y].draw(surface, x, y, in_fov, visited)
 
     def in_bounds(self, x, y):
         return 0 <= x < self.width and 0 <= y < self.height
@@ -70,8 +61,88 @@ class Map:
             x = random.randint(1, self.width-1)
             y = random.randint(1, self.height-1)
             tile = self.tiles[x][y]
-            tileFound = tile.block_path == False
+            tileFound = tile.blocks_path == False
         return x, y
+
+    def get_entity_at(self, x, y):
+        for e in self.entities:
+            if (e.x == x and e.y == y):
+                return e
+        return None
+
+    def get_four_neighbours(self, x, y):
+        neighbour_deltas = [(x, y) for x in range(-1, 2)
+                            for y in range(-1, 2) if x != 0 or y != 0]
+        neighbours = []
+        for delta in neighbour_deltas:
+            dx, dy = delta
+            xx = x + dx
+            yy = y + dy
+            if 0 < xx and xx < width and 0 < yy and 0 < height:
+                neighbours.append(self.tiles[x+dx][y+dy])
+
+    def draw(self, surface):
+        for y in range(0, MAP_HEIGHT):
+            for x in range(0, MAP_WIDTH):
+                in_fov = (x, y) in self.fov
+                visited = (x, y) in self.visited
+                if in_fov and not visited:
+                    self.visited[x, y] = True
+
+                self.tiles[x][y].draw(surface, x, y, in_fov, visited)
+
+    #
+    #
+    # UTILITIES
+    #
+    #
+
+    def astar_search(self, start, end):
+        open = []
+        closed = []
+        start_node = Node(start, None)
+        goal_node = Node(end, None)
+        open.append(start_node)
+
+        while len(open) > 0:
+            open.sort()
+            current_node = open.pop(0)
+            closed.append(current_node)
+            if current_node.position == goal_node.position:
+                path = []
+                while current_node != start_node:
+                    path.append(current_node.position)
+                    current_node = current_node.parent
+                return path[::-1]
+            (x, y) = current_node.position
+            neighbors = [(x-1, y), (x+1, y), (x, y-1), (x, y+1)]
+            random.shuffle(neighbors)
+            for next in neighbors:
+                (x, y) = next
+                blocks_path = self.tiles[x][y].blocks_path
+                if blocks_path:
+                    continue
+                neighbor = Node(next, current_node)
+                if neighbor in closed:
+                    continue
+                neighbor.g = abs(neighbor.position[0] - start_node.position[0]) + abs(
+                    neighbor.position[1] - start_node.position[1])
+                neighbor.h = abs(neighbor.position[0] - goal_node.position[0]) + abs(
+                    neighbor.position[1] - goal_node.position[1])
+                neighbor.f = neighbor.g + neighbor.h
+                if not neighbor in open:
+                    open.append(neighbor)
+                else:
+                    for o in open:
+                        if o == neighbor and neighbor.f > o.f:
+                            open.append(neighbor)
+        return None
+
+    #
+    #
+    #   BUILDING MAPS
+    #
+    #
 
     def fill_with_solid(self, width, height):
         return [[self.tileset.wall
@@ -96,9 +167,9 @@ class Map:
                     sum = 0
                     for delta in neighbour_deltas:
                         dx, dy = delta
-                        if self.tiles[x+dx][y+dy].block_path:
+                        if self.tiles[x+dx][y+dy].blocks_path:
                             sum = sum + 1
-                    if tmp_tiles[x][y].block_path:
+                    if tmp_tiles[x][y].blocks_path:
                         tmp_tiles[x][y] = self.tileset.floor if sum >= 3 else self.tiles.wall
                     else:
                         tmp_tiles[x][y] = self.tileset.floor if sum >= 5 else self.tiles.wall
@@ -132,20 +203,44 @@ class Map:
                         self.create_horizontal_tunnel(last_x, x, y)
                 rooms.append(room)
 
+        creatureindex = 0
         for room in rooms:
             x, y = room.get_empty_position()
-            entity_factory.A_Creature(x, y, self)
+            entity_factory.A_Creature(x, y, creatureindex, self)
+            creatureindex += 1
+            entity_factory.A_HealingPotion(x, y, self)
 
         self.rooms = rooms
 
     def create_horizontal_tunnel(self, x1, x2, y):
         for x in range(min(x1, x2), max(x1, x2)+1):
-            print(x)
             self.tiles[x][y] = self.tileset.floor
 
     def create_vertical_tunnel(self, y1, y2, x):
         for y in range(min(y1, y2), max(y1, y2) + 1):
             self.tiles[x][y] = self.tileset.floor
+
+
+class Node:
+    # Initialize the class
+    def __init__(self, position: (), parent: ()):
+        self.position = position
+        self.parent = parent
+        self.g = 0  # Distance to start node
+        self.h = 0  # Distance to goal node
+        self.f = 0  # Total cost
+    # Compare nodes
+
+    def __eq__(self, other):
+        return self.position == other.position
+    # Sort nodes
+
+    def __lt__(self, other):
+        return self.f < other.f
+    # Print node
+
+    def __repr__(self):
+        return ('({0},{1})'.format(self.position, self.f))
 
 
 class RectangularRoom:
@@ -175,13 +270,13 @@ class RectangularRoom:
             x = random.randint(self.x1+1, self.x2-1)
             y = random.randint(self.y1+1, self.y2-1)
             tile = self.current_map.tiles[x][y]
-            tileFound = tile.block_path == False
+            tileFound = tile.blocks_path == False
         return x, y
 
 
 class DungeonTileSet:
     def __init__(self):
-        self.wall = Tile(sprites.fake_sprite(COLOR_WHITE),
-                         sprites.fake_sprite(COLOR_WHITE_DARKER), True, True)
-        self.floor = Tile(sprites.fake_sprite(COLOR_GREY),
-                          sprites.fake_sprite(COLOR_GREY_DARKER), False, False)
+        self.wall = Tile(sprites.fake_sprite(COLOR_LIGHT_MED),
+                         sprites.fake_sprite(COLOR_LIGHT_MIN), True, True)
+        self.floor = Tile(sprites.fake_sprite(COLOR_DARK_MIN),
+                          sprites.fake_sprite(COLOR_DARK_MED), False, False)

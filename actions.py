@@ -1,6 +1,8 @@
 import components
 import behaviours
 import math
+import sprites
+from constants import *
 
 
 class ActionResult:
@@ -10,41 +12,47 @@ class ActionResult:
 
 
 class Action:
-    def perform(self):
+    def perform(self, engine):
         print("WARNING: Action has no perform")
         return ActionResult(False, None)
 
 
+class ImpossibleAction:
+    def perform(self, engine):
+        return ActionResult(True, None)
+
+
+class WaitAction:
+    def perform(self, engine):
+        return ActionResult(True)
+
+
 class WalkAction(Action):
-    def __init__(self, actor, engine, dx, dy):
+    def __init__(self, actor, dx, dy):
         self.actor = actor
         self.dx = dx
         self.dy = dy
-        self.engine = engine
 
-    def perform(self):
+    def perform(self, engine):
+        if self.dx == 0 and self.dy == 0:
+            return ActionResult(True)
+
         xx = self.actor.x + self.dx
         yy = self.actor.y + self.dy
-        current_map = self.engine.current_map
+        current_map = engine.current_map
 
-        tile_is_blocked = current_map.tiles[xx][yy].block_path == True
-        occupant = None
+        tile_is_blocked = current_map.tiles[xx][yy].blocks_path == True
+        if tile_is_blocked:
+            return ActionResult(False, BumpAction(self.actor, xx, yy))
 
-        for a in current_map.entities:
-            if (a.x == xx and a.y == yy and a is not self.actor):
-                occupant = a
-
-        if occupant:
+        occupant = current_map.get_entity_at(xx, yy)
+        if occupant and occupant.is_alive:
             return ActionResult(False, MeleeAttackAction(self.actor, occupant))
-        else:
-            if tile_is_blocked == False:
-                self.actor.x += self.dx
-                self.actor.y += self.dy
-                self.endingPosition = (
-                    self.actor.x + self.dx, self.actor.y + self.dy)
-                return ActionResult(True)
-            else:
-                return ActionResult(False, BumpAction(self.actor, xx, yy))
+
+        self.actor.x += self.dx
+        self.actor.y += self.dy
+
+        return ActionResult(True)
 
 
 class MeleeAttackAction (Action):
@@ -52,32 +60,31 @@ class MeleeAttackAction (Action):
         self.attacker = attacker
         self.defender = defender
 
-    def perform(self):
+    def perform(self, engine):
         # get melee weapon, use to deal damage
-        return ActionResult(False, DamageAction(self.attacker, self.defender, 5))
+        engine.message_log.add_message(
+            f"{self.attacker.name} attacks {self.defender.name} for {1} hp", COLOR_LIGHT_MAX, True)
+        return ActionResult(False, DamageAction(self.attacker, self.defender, 1))
 
 
 class RangeAttackAction (Action):
-    def __init__(self, rangedWeaponComponent, attacker, attackedCell, engine):
+    def __init__(self, rangedWeaponComponent, attacker, attackedCell):
         self.rangedWeaponComponent = rangedWeaponComponent
         self.attacker = attacker
         self.attackedCell = attackedCell
-        self.objects = engine.objects
 
-    def perform(self):
+    def perform(self, engine):
         weapon = self.rangedWeaponComponent
         if weapon is None:
             return ActionResult(False, None)
 
         # get all objects at tilePosition
-        for obj in self.objects:
+        for e in engine.current_map.entities:
             x, y = self.attackedCell
-            print(obj.name)
-            print(distance(obj.x, obj.y, x, y))
-            print(weapon.range)
-            if distance(obj.x, obj.y, x, y) <= weapon.area:
-                print(weapon.name + " BANG! hits " + obj.name)
-                return ActionResult(False, DamageAction(self.attacker, obj, weapon.damage))
+            if distance(e.x, e.y, x, y) <= weapon.area:
+                engine.message_log.add_message(
+                    f"{self.attacker.name} attacks {e.name} for {weapon.damage} hp", COLOR_LIGHT_MAX, True)
+                return ActionResult(False, DamageAction(self.attacker, e, weapon.damage))
 
         return ActionResult(True)
 
@@ -88,13 +95,14 @@ class DamageAction (Action):
         self.defender = defender
         self.damage = damage
 
-    def perform(self):
+    def perform(self, engine):
         health = self.defender.get_component(components.HealthComponent)
         if health is None:
             return ActionResult(False, None)
 
         health.hp = max(0, health.hp - self.damage)
-        print("Took damage " + str(5) + ". Life at " + str(health.hp))
+        engine.message_log.add_message(
+            f"{self.defender.name} was hit, {self.damage}", COLOR_ORANGE, True)
         if (health.hp == 0):
             return ActionResult(False, KillAction(self.attacker, self.defender))
 
@@ -106,9 +114,13 @@ class KillAction (Action):
         self.attacker = attacker
         self.defender = defender
 
-    def perform(self):
-        print(self.defender.name + " is dead")
-        self.defender.remove_component(components.HealthComponent)
+    def perform(self, engine):
+        engine.message_log.add_message(
+            f"{self.defender.name} is dead", COLOR_BLOOD, True)
+        renderer = self.defender.get_component(components.RendererComponent)
+        renderer.change_image(sprites.load_sprite("tile001.png"))
+
+        self.defender.remove_component(components.IsSolid)
         self.defender.add_component(components.IsDead())
         return ActionResult(True)
 
@@ -119,9 +131,8 @@ class BumpAction (Action):
         self.x = x
         self.y = y
 
-    def perform(self):
-        print("BUMP!")
-        return ActionResult(True)
+    def perform(self, engine):
+        return ActionResult(False, ImpossibleAction())
 
 
 class PosessAction (Action):
@@ -129,12 +140,28 @@ class PosessAction (Action):
         self.attacker = attacker
         self.defender = defender
 
-    def perform(self):
-        print("posessing: " + self.defender.name)
+    def perform(self, engine):
+        #print("posessing: " + self.defender.name)
         self.attacker.remove_component(components.IsPlayer)
         self.defender.add_component(components.IsPlayer())
         return ActionResult(True)
 
+
+class HealAction(Action):
+    def __init__(self, heal_amount):
+        self.heal_amount = heal_amount
+
+    def perform(self, engine, targetxy):
+        x, y = targetxy
+        actor = engine.current_map.get_entity_at(x, y)
+        if actor is None:
+            return ActionResult(False, ImpossibleAction())
+        health_component = actor.get_component(components.HealthComponent)
+        if health_component is None:
+            return ActionResult(False, ImpossibleAction())
+        health_component.hp = max(
+            health_component.max_hp, health_component.hp + self.heal_amount)
+        return ActionResult(True)
 
 #  _   _ _____ _     ____  _____ ____  ____
 # | | | | ____| |   |  _ \| ____|  _ \/ ___|

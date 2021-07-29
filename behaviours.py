@@ -30,7 +30,7 @@ class KeyboardMouseInputBehaviour(Behaviour):
                 cellX = math.floor(x / constants.CELL_WIDTH)
                 cellY = math.floor(y / constants.CELL_HEIGHT)
                 # print('clicked on ' + str(cellX) + ' ' + str(cellY))
-                equipment = actor.get_component(components.Equipment)
+                equipment = actor.get_component(components.EquipmentComponent)
                 weapon = None
                 if event.button == 1:
                     weapon = equipment.main_weapon
@@ -56,6 +56,9 @@ class KeyboardMouseInputBehaviour(Behaviour):
                         actor, 1, 0)
                 if keys[pygame.K_SPACE]:
                     actor.next_action = actions.WaitAction()
+                if keys[pygame.K_g]:
+                    actor.next_action = actions.PickItemAction(
+                        actor, actor.x, actor.y)
 
                 self.last_keyboard_inputs = keys
 

@@ -15,9 +15,11 @@ class Entity:
     def add_components(self, components):
         for component in components:
             self.add_component(component)
+            component.owner = self
 
     def add_component(self, component):
         self.components[component.__class__.__name__] = component
+        component.owner = self
 
     def get_component(self, component):
         c = self.components.get(component.__name__, None)

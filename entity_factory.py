@@ -2,6 +2,7 @@ from actor import Actor
 from item import Item
 import components
 import behaviours
+import actions
 import sprites
 
 
@@ -12,7 +13,8 @@ def A_Player(x, y, current_map):
                        components.HealthComponent(10),
                        components.RendererComponent(
                            sprites.load_sprite("tile025.png")),
-                       components.Equipment(
+                       components.InventoryComponent(1),
+                       components.EquipmentComponent(
                            components.RangedWeaponComponent(
                                "Colt", 6, 10, 10, 1, 1),
                            components.RangedWeaponComponent(
@@ -44,4 +46,5 @@ def A_HealingPotion(x, y, current_map):
             sprites.load_sprite("tile759.png")),
         components.Consumable()
     ],
+        actions.HealAction,
         current_map)

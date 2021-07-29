@@ -18,7 +18,13 @@ class Action:
 
 
 class ImpossibleAction:
+    def __init__(self, message=None):
+        self.message = message
+
     def perform(self, engine):
+        if self.message is not None:
+            engine.message_log.add_message(
+                self.message, COLOR_LIGHT_MAX, True)
         return ActionResult(True, None)
 
 
@@ -45,7 +51,7 @@ class WalkAction(Action):
         if tile_is_blocked:
             return ActionResult(False, BumpAction(self.actor, xx, yy))
 
-        occupant = current_map.get_entity_at(xx, yy)
+        occupant = current_map.get_actor_at(xx, yy)
         if occupant and occupant.is_alive:
             return ActionResult(False, MeleeAttackAction(self.actor, occupant))
 
@@ -79,7 +85,7 @@ class RangeAttackAction (Action):
             return ActionResult(False, None)
 
         # get all objects at tilePosition
-        for e in engine.current_map.entities:
+        for e in engine.current_map.actors:
             x, y = self.attackedCell
             if distance(e.x, e.y, x, y) <= weapon.area:
                 engine.message_log.add_message(
@@ -150,10 +156,10 @@ class PosessAction (Action):
 class HealAction(Action):
     def __init__(self, heal_amount):
         self.heal_amount = heal_amount
+        self.x, self.y = targetxy
 
-    def perform(self, engine, targetxy):
-        x, y = targetxy
-        actor = engine.current_map.get_entity_at(x, y)
+    def perform(self, engine):
+        actor = engine.current_map.get_actor_at(self.x, self.y)
         if actor is None:
             return ActionResult(False, ImpossibleAction())
         health_component = actor.get_component(components.HealthComponent)
@@ -163,6 +169,45 @@ class HealAction(Action):
             health_component.max_hp, health_component.hp + self.heal_amount)
         return ActionResult(True)
 
+# INVENTORY RELATED ACTIONS
+
+
+class PickItemAction(Action):
+    def __init__(self, actor, x, y):
+        self.actor = actor
+        self.x = x
+        self.y = y
+
+    def perform(self, engine):
+        item = engine.current_map.get_item_at(self.x, self.y)
+        if item is None:
+            return ActionResult(False, ImpossibleAction("Nothing here to pick"))
+        
+        inventoryComponent = self.actor.get_component(
+            components.InventoryComponent)
+        if inventoryComponent is None:
+            return ActionResult(False, ImpossibleAction("WTF? No inventory?"))
+        
+        inventory = inventoryComponent.inventory
+        if inventory.is_full:
+            return ActionResult(False, ImpossibleAction("Inventory is full!"))
+
+        engine.current_map.items.remove(item)
+        inventory.items.append(item)
+        engine.message_log.add_message(
+            f"{self.actor.name} picks {item.name}", COLOR_LIGHT_MAX, True)
+
+        return ActionResult(True)
+
+
+class DropItemAction(Action):
+    def __init__(self, inventory, item):
+        self.inventory = inventory
+        self.item = item
+
+    def perform(self, engine, current_owner):
+        self.inventory.items.remove(item)
+        return ActionResult(True)
 #  _   _ _____ _     ____  _____ ____  ____
 # | | | | ____| |   |  _ \| ____|  _ \/ ___|
 # | |_| |  _| | |   | |_) |  _| | |_) \___ \

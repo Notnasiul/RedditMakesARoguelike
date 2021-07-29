@@ -13,12 +13,12 @@ class Engine():
         self.message_log = MessageLog()
         self.current_actor = 0
         self.current_map = map
-        self.player = self.current_map.entities[0]
+        self.player = self.current_map.actors[0]
         self.dungeon_surface = pygame.Surface(
             (GAME_WIDTH*CELL_WIDTH, GAME_HEIGHT*CELL_HEIGHT))
 
     def update(self):
-        actor = self.current_map.entities[self.current_actor]
+        actor = self.current_map.actors[self.current_actor]
 
         # Move player
         if actor.is_player:
@@ -46,14 +46,15 @@ class Engine():
                     return True
                 else:
                     if type(action_result.alternate) == ImpossibleAction:
+                        action_result.alternate.perform(self)
                         return False
                 action = action_result.alternate
         return False
 
     def next_actor(self):
         self.current_actor = (self.current_actor +
-                              1) % len(self.current_map.entities)
-        return self.current_map.entities[self.current_actor]
+                              1) % len(self.current_map.actors)
+        return self.current_map.actors[self.current_actor]
 
     def render(self, surface):
         surface.fill(COLOR_BLACK)
@@ -67,7 +68,7 @@ class Engine():
                 if self.current_map.in_fov(item.x, item.y):
                     renderer.draw(self.dungeon_surface, item.x, item.y)
 
-        for actor in self.current_map.entities:
+        for actor in self.current_map.actors:
             renderer = actor.get_component(components.RendererComponent)
             if renderer != None:
                 if self.current_map.in_fov(actor.x, actor.y):

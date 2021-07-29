@@ -9,7 +9,7 @@ class Actor(Entity):
         self.behaviour = behaviour
         self.next_action = None
         if map:
-            map.entities.append(self)
+            map.actors.append(self)
 
     def get_action(self):
         action = self.next_action

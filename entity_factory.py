@@ -22,7 +22,7 @@ def A_Player(x, y, current_map):
                        ),
                        components.IsSolid()
                    ],
-                   behaviours.KeyboardMouseInputBehaviour(),
+                   behaviours.IngameInput(),
                    current_map)
     return player
 

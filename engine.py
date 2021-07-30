@@ -14,13 +14,19 @@ class Engine():
         self.current_actor = 0
         self.current_map = map
         self.player = self.current_map.actors[0]
+
         self.dungeon_surface = pygame.Surface(
             (GAME_WIDTH*CELL_WIDTH, GAME_HEIGHT*CELL_HEIGHT))
+
+        self.inventory_surface = pygame.Surface(
+            (150, GAME_HEIGHT))
+
+        self.show_inventory = False
 
     def update(self):
         actor = self.current_map.actors[self.current_actor]
 
-        # Move player
+        # Process player Input
         if actor.is_player:
             self.current_map.update_fov(actor.x, actor.y, 5)
             done = self.evaluate_actions(actor)
@@ -34,7 +40,7 @@ class Engine():
 
     def evaluate_actions(self, actor):
         if actor.is_alive == False:
-            return
+            return True
 
         behaviour = actor.behaviour
         behaviour.evaluate(actor, self)
@@ -42,14 +48,14 @@ class Engine():
         if action is not None:
             while (True):
                 action_result = action.perform(self)
+                if action_result == None:
+                    return False
                 if action_result.alternate == None:
                     return True
-                else:
-                    if type(action_result.alternate) == ImpossibleAction:
-                        action_result.alternate.perform(self)
-                        return False
+                if type(action_result.alternate) == ImpossibleAction:
+                    action_result.alternate.perform(self)
+                    return False
                 action = action_result.alternate
-        return False
 
     def next_actor(self):
         self.current_actor = (self.current_actor +
@@ -58,7 +64,6 @@ class Engine():
 
     def render(self, surface):
         surface.fill(COLOR_BLACK)
-
         self.dungeon_surface.fill(COLOR_GREY_DARKER)
         self.current_map.draw(self.dungeon_surface)
 
@@ -79,6 +84,9 @@ class Engine():
 
         self.render_UI(surface)
 
+        if self.show_inventory:
+            self.render_actor_inventory(surface, self.player)
+
         pygame.display.flip()
 
     def render_UI(self, surface):
@@ -89,3 +97,11 @@ class Engine():
 
         # Message Log
         self.message_log.render(surface, 10, 510, 750, 80)
+
+    def render_actor_inventory(self, surface, actor):
+        inventoryComponent = actor.get_component(components.InventoryComponent)
+        number_of_items_in_inventory = len(inventoryComponent.inventory.items)
+
+        self.inventory_surface.fill(COLOR_RED)
+        surface.blit(self.inventory_surface, pygame.Rect(
+            GAME_WIDTH-150, 0, 150, GAME_HEIGHT))

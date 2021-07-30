@@ -14,11 +14,7 @@ class Behaviour():
         self.strategy.evaluate(actor, engine)
 
 
-class KeyboardMouseInputBehaviour(Behaviour):
-    def __init__(self):
-        super().__init__()
-        self.last_keyboard_inputs = pygame.key.get_pressed()
-
+class IngameInput(Behaviour):
     def evaluate(self, actor, engine):
         events_list = pygame.event.get()
         for event in events_list:
@@ -59,8 +55,31 @@ class KeyboardMouseInputBehaviour(Behaviour):
                 if keys[pygame.K_g]:
                     actor.next_action = actions.PickItemAction(
                         actor, actor.x, actor.y)
+                if keys[pygame.K_i]:
+                    actor.next_action = actions.OpenInventory(actor)
 
-                self.last_keyboard_inputs = keys
+
+class InventoryInputBehavior(Behaviour):
+    def evaluate(self, actor, engine):
+        events_list = pygame.event.get()
+        for event in events_list:
+            if event.type == pygame.QUIT:
+                raise SystemExit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = event.pos
+                # Maybe we can select things using Mouse at some point?
+                pass
+
+            if event.type == pygame.KEYDOWN:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_ESCAPE]:
+                    actor.next_action = actions.CloseInventory(actor)
+                else:
+                    item_index = event.key-97
+                    if 0 <= item_index < 26:
+                        actor.next_action = actions.SelecInventoryItem(
+                            actor, item_index)
 
 
 class RandomWalkBehaviour():

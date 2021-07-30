@@ -147,7 +147,7 @@ class PosessAction (Action):
         self.defender = defender
 
     def perform(self, engine):
-        #print("posessing: " + self.defender.name)
+        # print("posessing: " + self.defender.name)
         self.attacker.remove_component(components.IsPlayer)
         self.defender.add_component(components.IsPlayer())
         return ActionResult(True)
@@ -172,6 +172,48 @@ class HealAction(Action):
 # INVENTORY RELATED ACTIONS
 
 
+class OpenInventory(Action):
+    def __init__(self, actor):
+        self.actor = actor
+
+    def perform(self, engine):
+        inventoryComponent = self.actor.get_component(
+            components.InventoryComponent)
+        if inventoryComponent is None:
+            return ActionResult(False, ImpossibleAction("WTF? No inventory?"))
+
+        engine.show_inventory = True
+        engine.player.behaviour = behaviours.InventoryInputBehavior()
+        return None
+
+
+class CloseInventory(Action):
+    def __init__(self, actor):
+        self.actor = actor
+
+    def perform(self, engine):
+        engine.show_inventory = False
+        engine.player.behaviour = behaviours.IngameInput()
+        return None
+
+
+class SelecInventoryItem(Action):
+    def __init__(self, actor, item_index):
+        self.item_index = item_index
+        self.actor = actor
+
+    def perform(self, engine):
+        inventoryComponent = self.actor.get_component(
+            components.InventoryComponent)
+        inventory = inventoryComponent.inventory
+
+        item = inventory.get_item(self.item_index)
+        if item is not None:
+            print(f"item {inventory.get_item(self.item_index).name} selected")
+
+        return None
+
+
 class PickItemAction(Action):
     def __init__(self, actor, x, y):
         self.actor = actor
@@ -182,12 +224,12 @@ class PickItemAction(Action):
         item = engine.current_map.get_item_at(self.x, self.y)
         if item is None:
             return ActionResult(False, ImpossibleAction("Nothing here to pick"))
-        
+
         inventoryComponent = self.actor.get_component(
             components.InventoryComponent)
         if inventoryComponent is None:
             return ActionResult(False, ImpossibleAction("WTF? No inventory?"))
-        
+
         inventory = inventoryComponent.inventory
         if inventory.is_full:
             return ActionResult(False, ImpossibleAction("Inventory is full!"))

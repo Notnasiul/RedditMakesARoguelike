@@ -16,6 +16,10 @@ class Action:
         print("WARNING: Action has no perform")
         return ActionResult(False, None)
 
+    def set_target_tile(self, x, y):
+        self.x = x
+        self.y = y
+
 
 class ImpossibleAction:
     def __init__(self, message=None):
@@ -90,9 +94,50 @@ class RangeAttackAction (Action):
             if distance(e.x, e.y, x, y) <= weapon.area:
                 engine.message_log.add_message(
                     f"{self.attacker.name} attacks {e.name} for {weapon.damage} hp", COLOR_LIGHT_MAX, True)
-                return ActionResult(False, DamageAction(self.attacker, e, weapon.damage))
+                apply_damage(engine, e, weapon.damage)
+                # return ActionResult(False, DamageAction(self.attacker, e, weapon.damage))
 
         return ActionResult(True)
+
+
+class AreaAttackAction (Action):
+    def __init__(self, damage, radius, x=0, y=0):
+        self.damage = damage
+        self.radius = radius
+        self.x = x
+        self.y = y
+
+    def perform(self, engine):
+        for e in engine.current_map.actors:
+            x, y = self.x, self.y
+            if distance(e.x, e.y, x, y) <= self.radius:
+                # return ActionResult(False, DamageAction(None, e, self.damage))
+                apply_damage(engine, e, self.damage)
+        return ActionResult(True)
+
+
+# NOT SURE ABOUT THESE... MAYBE I NEED A LIST OF NEXT_ACTIONS INSTEAD TO CHAIN DAMAGES AND KILLS!
+
+def apply_damage(engine, defender, damage):
+    health = defender.get_component(components.HealthComponent)
+    if health is None:
+        return
+
+    health.hp = max(0, health.hp - damage)
+    engine.message_log.add_message(
+        f"{defender.name} was hit, {damage}", COLOR_ORANGE, True)
+    if (health.hp == 0):
+        kill(engine, defender)
+
+
+def kill(engine, actor):
+    engine.message_log.add_message(
+        f"{actor.name} is dead", COLOR_BLOOD, True)
+    renderer = actor.get_component(components.RendererComponent)
+    renderer.change_image(sprites.load_sprite("tile001.png"))
+
+    actor.remove_component(components.IsSolid)
+    actor.add_component(components.IsDead())
 
 
 class DamageAction (Action):
@@ -156,16 +201,16 @@ class PosessAction (Action):
 class HealAction(Action):
     def __init__(self, heal_amount):
         self.heal_amount = heal_amount
-        self.x, self.y = targetxy
 
     def perform(self, engine):
+        print("healing")
         actor = engine.current_map.get_actor_at(self.x, self.y)
         if actor is None:
             return ActionResult(False, ImpossibleAction())
         health_component = actor.get_component(components.HealthComponent)
         if health_component is None:
             return ActionResult(False, ImpossibleAction())
-        health_component.hp = max(
+        health_component.hp = min(
             health_component.max_hp, health_component.hp + self.heal_amount)
         return ActionResult(True)
 
@@ -243,13 +288,47 @@ class PickItemAction(Action):
 
 
 class DropItemAction(Action):
-    def __init__(self, inventory, item):
-        self.inventory = inventory
-        self.item = item
+    def __init__(self, actor, item_index):
+        inventoryComponent = actor.get_component(
+            components.InventoryComponent)
 
-    def perform(self, engine, current_owner):
-        self.inventory.items.remove(item)
+        self.inventory = inventoryComponent.inventory
+        self.item = self.inventory.items[item_index]
+
+    def perform(self, engine):
+        # TODO: find place to drop the item, update
+        self.inventory.items.remove(self.item)
+        engine.current_map.items.append(self.item)
         return ActionResult(True)
+
+
+class ConsumeItemAction(Action):
+    def __init__(self, actor, item_index):
+        inventoryComponent = actor.get_component(
+            components.InventoryComponent)
+
+        self.inventory = inventoryComponent.inventory
+        self.item_index = item_index
+        self.actor = actor
+
+    def perform(self, engine):
+        if self.item_index >= len(self.inventory.items):
+            return ActionResult(False, ImpossibleAction("Item slot is empty"))
+        engine.show_inventory = False
+        engine.player.behaviour = behaviours.SelectMapPositionBehaviour(
+            self.on_position_selected)
+
+        return ActionResult(False)
+
+    def on_position_selected(self, engine, x, y):
+        item = self.inventory.items[self.item_index]
+        self.inventory.items.remove(item)
+        engine.show_inventory = False
+        engine.player.behaviour = behaviours.IngameInput()
+        item.action.set_target_tile(x, y)
+        self.actor.next_action = item.action
+
+
 #  _   _ _____ _     ____  _____ ____  ____
 # | | | | ____| |   |  _ \| ____|  _ \/ ___|
 # | |_| |  _| | |   | |_) |  _| | |_) \___ \

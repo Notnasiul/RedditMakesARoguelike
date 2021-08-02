@@ -5,6 +5,9 @@ import math
 import constants
 import components
 
+import lzma
+import pickle
+
 
 class Behaviour():
     def __init__(self):
@@ -16,6 +19,7 @@ class Behaviour():
 
 class IngameInput(Behaviour):
     def evaluate(self, actor, engine):
+        engine.help_message = "arrows: move, i:inventory"
         events_list = pygame.event.get()
         for event in events_list:
             if event.type == pygame.QUIT:
@@ -38,6 +42,10 @@ class IngameInput(Behaviour):
 
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
+                if keys[pygame.K_s]:
+                    save_data = pickle.dumps(engine.current_map)
+                    with open("test.savedata", "wb") as f:
+                        f.write(save_data)
                 if keys[pygame.K_UP]:
                     actor.next_action = actions.WalkAction(
                         actor, 0, -1)
@@ -61,6 +69,7 @@ class IngameInput(Behaviour):
 
 class InventoryInputBehavior(Behaviour):
     def evaluate(self, actor, engine):
+        engine.help_message = "Select item to use (a-z)"
         events_list = pygame.event.get()
         for event in events_list:
             if event.type == pygame.QUIT:
@@ -78,8 +87,29 @@ class InventoryInputBehavior(Behaviour):
                 else:
                     item_index = event.key-97
                     if 0 <= item_index < 26:
-                        actor.next_action = actions.SelecInventoryItem(
+                        # actor.next_action = actions.SelecInventoryItem(
+                        #   actor, item_index)
+                        actor.next_action = actions.ConsumeItemAction(
                             actor, item_index)
+
+
+class SelectMapPositionBehaviour():
+    def __init__(self, on_position_selected):
+        self.on_position_selected = on_position_selected
+
+    def evaluate(self, actor, engine):
+        engine.help_message = "Click on map to use item"
+        events_list = pygame.event.get()
+        for event in events_list:
+            if event.type == pygame.QUIT:
+                raise SystemExit()
+
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                x, y = event.pos
+                cellX = math.floor(x / constants.CELL_WIDTH)
+                cellY = math.floor(y / constants.CELL_HEIGHT)
+
+                self.on_position_selected(engine, cellX, cellY)
 
 
 class RandomWalkBehaviour():

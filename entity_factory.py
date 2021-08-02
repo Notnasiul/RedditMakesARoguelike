@@ -13,7 +13,7 @@ def A_Player(x, y, current_map):
                        components.HealthComponent(10),
                        components.RendererComponent(
                            sprites.load_sprite("tile025.png")),
-                       components.InventoryComponent(1),
+                       components.InventoryComponent(5),
                        components.EquipmentComponent(
                            components.RangedWeaponComponent(
                                "Colt", 6, 10, 10, 1, 1),
@@ -43,8 +43,16 @@ def A_Creature(x, y, index, current_map):
 def A_HealingPotion(x, y, current_map):
     item = Item(x, y, "Healing Potion", [
         components.RendererComponent(
-            sprites.load_sprite("tile759.png")),
-        components.Consumable()
+            sprites.load_sprite("tile759.png"))
     ],
-        actions.HealAction,
+        actions.HealAction(5),
+        current_map)
+
+
+def A_Dinamite(x, y, current_map):
+    item = Item(x, y, "Dinamite", [
+        components.RendererComponent(
+            sprites.load_sprite("tile1006.png"))
+    ],
+        actions.AreaAttackAction(10, 3),
         current_map)

@@ -14,7 +14,7 @@ def game():
     pygame.init()
     main_surface = pygame.display.set_mode(
         (GAME_WIDTH, GAME_HEIGHT))
-    pygame.display.set_caption("Re ddit makes a roguelike")
+    pygame.display.set_caption("Reddit makes a roguelike")
 
     current_map = Map(MAP_WIDTH, MAP_HEIGHT, DungeonTileSet())
 

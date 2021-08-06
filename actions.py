@@ -134,12 +134,13 @@ def kill(engine, actor):
     engine.message_log.add_message(
         f"{actor.name} is dead", COLOR_BLOOD, True)
     renderer = actor.get_component(components.RendererComponent)
-    renderer.change_image(sprites.load_sprite("tile001.png"))
+    renderer.change_image("blood.png")
 
     actor.remove_component(components.IsSolid)
     actor.add_component(components.IsDead())
 
 
+# Watch out, I'm using both damage/kill functions and these actions
 class DamageAction (Action):
     def __init__(self, attacker, defender, damage):
         self.attacker = attacker
@@ -159,8 +160,11 @@ class DamageAction (Action):
 
         return ActionResult(True)
 
+# Watch out, I'm using both damage/kill functions and these actions
+
 
 class KillAction (Action):
+
     def __init__(self, attacker, defender):
         self.attacker = attacker
         self.defender = defender
@@ -213,6 +217,18 @@ class HealAction(Action):
         health_component.hp = min(
             health_component.max_hp, health_component.hp + self.heal_amount)
         return ActionResult(True)
+
+
+# MENU RELATED ACTIONS
+
+class ExitGameAction(Action):
+    def __init__(self, actor):
+        self.actor = actor
+
+    def perform(self, engine):
+        engine.show_exit_menu = True
+        engine.player.behaviour = behaviours.ExitGameBehavior()
+        return None
 
 # INVENTORY RELATED ACTIONS
 

@@ -1,4 +1,4 @@
-import constants
+
 import components
 from entity import Entity
 

@@ -1,4 +1,4 @@
-import constants
+
 from inventory import Inventory
 
 
@@ -10,10 +10,6 @@ class Component():
 class RendererComponent(Component):
     def __init__(self, sprite):
         self.change_image(sprite)
-
-    def draw(self, surface, x, y):
-        surface.blit(self.sprite, (x * constants.CELL_WIDTH,
-                                   y * constants.CELL_HEIGHT))
 
     def change_image(self, sprite):
         self.sprite = sprite

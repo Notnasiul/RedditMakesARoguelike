@@ -1,7 +1,4 @@
 from constants import *
-import pygame
-import textwrap
-import os
 
 
 class Message:
@@ -26,13 +23,3 @@ class MessageLog:
             self.messages[-1].count += 1
         else:
             self.messages.append(Message(text, color))
-
-    def render(self, engine, surface, x, y, width, height):
-        y_offset = 0
-        for message in reversed(self.messages):
-            for line in reversed(textwrap.wrap(message.full_text, width)):
-                label = engine.small_font.render(line, True, message.color)
-                surface.blit(label, (x, y+y_offset))
-                y_offset += 10
-                if y_offset > height:
-                    return

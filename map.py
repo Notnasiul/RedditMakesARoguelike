@@ -1,9 +1,9 @@
 from constants import *
-import pygame
 import random
-import sprites
 import fov
 import entity_factory
+import lzma
+import pickle
 
 
 class Tile:
@@ -14,16 +14,14 @@ class Tile:
         self.lit_sprite = lit_sprite
         self.dark_sprite = dark_sprite
 
-    def draw(self, surface, x, y, inFov, visited):
+    def get_tile_sprite(self, inFov, visited):
         sprite = None
         if inFov:
             sprite = self.lit_sprite
         else:
             if visited:
                 sprite = self.dark_sprite
-        if sprite:
-            surface.blit(sprite, (x * CELL_WIDTH,
-                                  y * CELL_HEIGHT))
+        return sprite
 
 
 class Map:
@@ -83,14 +81,6 @@ class Map:
             if 0 < xx and xx < width and 0 < yy and 0 < height:
                 neighbours.append(self.tiles[x+dx][y+dy])
 
-    def draw(self, surface):
-        for y in range(0, MAP_HEIGHT):
-            for x in range(0, MAP_WIDTH):
-                in_fov = (x, y) in self.fov
-                visited = (x, y) in self.visited
-                if in_fov and not visited:
-                    self.visited[x, y] = True
-                self.tiles[x][y].draw(surface, x, y, in_fov, visited)
     #
     #
     # UTILITIES
@@ -272,7 +262,5 @@ class RectangularRoom:
 
 class DungeonTileSet:
     def __init__(self):
-        self.wall = Tile(sprites.fake_sprite(COLOR_LIGHT_MED),
-                         sprites.fake_sprite(COLOR_LIGHT_MIN), True, True)
-        self.floor = Tile(sprites.fake_sprite(COLOR_DARK_MIN),
-                          sprites.fake_sprite(COLOR_DARK_MED), False, False)
+        self.wall = Tile("wall_light.png", "wall_dark.png", True, True)
+        self.floor = Tile("floor_light.png", "floor_dark.png", False, False)

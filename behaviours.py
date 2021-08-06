@@ -42,10 +42,10 @@ class IngameInput(Behaviour):
 
             if event.type == pygame.KEYDOWN:
                 keys = pygame.key.get_pressed()
-                if keys[pygame.K_s]:
-                    save_data = pickle.dumps(engine.current_map)
-                    with open("test.savedata", "wb") as f:
-                        f.write(save_data)
+
+                if keys[pygame.K_ESCAPE]:
+                    actor.next_action = actions.ExitGameAction(actor)
+
                 if keys[pygame.K_UP]:
                     actor.next_action = actions.WalkAction(
                         actor, 0, -1)
@@ -65,6 +65,11 @@ class IngameInput(Behaviour):
                         actor, actor.x, actor.y)
                 if keys[pygame.K_i]:
                     actor.next_action = actions.OpenInventory(actor)
+
+                if keys[pygame.K_s]:
+                    save_data = pickle.dumps(engine)
+                    with open("test.savedata", "wb") as f:
+                        f.write(save_data)
 
 
 class InventoryInputBehavior(Behaviour):
@@ -91,6 +96,20 @@ class InventoryInputBehavior(Behaviour):
                         #   actor, item_index)
                         actor.next_action = actions.ConsumeItemAction(
                             actor, item_index)
+
+
+class ExitGameBehavior(Behaviour):
+    def evaluate(self, actor, engine):
+        engine.help_message = "Exit game?"
+        events_list = pygame.event.get()
+        for event in events_list:
+            if event.type == pygame.QUIT:
+                raise SystemExit()
+
+            if event.type == pygame.KEYDOWN:
+                keys = pygame.key.get_pressed()
+                if keys[pygame.K_ESCAPE]:
+                    engine.in_game = False
 
 
 class SelectMapPositionBehaviour():

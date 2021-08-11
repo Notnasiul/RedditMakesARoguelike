@@ -212,10 +212,11 @@ class HealAction(Action):
         print("healing")
         actor = engine.current_map.get_actor_at(self.x, self.y)
         if actor is None:
-            return ActionResult(False, ImpossibleAction())
+            return ActionResult(False, ImpossibleAction("Nothing to heal there"))
         health_component = actor.get_component(components.HealthComponent)
         if health_component is None:
-            return ActionResult(False, ImpossibleAction())
+            return ActionResult(False, ImpossibleAction("I can't heal that"))
+        print("healing 2")
         health_component.hp = min(
             health_component.max_hp, health_component.hp + self.heal_amount)
         return ActionResult(True)

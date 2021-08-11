@@ -16,6 +16,14 @@ class Behaviour():
     def evaluate(self, actor, engine):
         self.strategy.evaluate(actor, engine)
 
+    def get_cell_at_mouse_position(self, event):
+        x, y = event.pos
+        cellX = (x+0.5) // constants.CELL_WIDTH
+        cellY = (y+0.5) // constants.CELL_HEIGHT
+        cellX //= 2
+        cellY //= 2
+        return cellX, cellY
+
 
 class IngameInput(Behaviour):
     def evaluate(self, actor, engine):
@@ -26,11 +34,7 @@ class IngameInput(Behaviour):
                 raise SystemExit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = event.pos
-                cellX = (x+0.5) // constants.CELL_WIDTH
-                cellY = (y+0.5) // constants.CELL_HEIGHT
-                cellX //= 2
-                cellY //= 2
+                cellX, cellY = self.get_cell_at_mouse_position(event)
                 print('clicked on ' + str(cellX) + ' ' + str(cellY))
                 equipment = actor.get_component(components.EquipmentComponent)
                 weapon = None
@@ -118,7 +122,7 @@ class ExitGameBehavior(Behaviour):
                     actor.next_action = actions.ContinueGameAction(actor)
 
 
-class SelectMapPositionBehaviour():
+class SelectMapPositionBehaviour(Behaviour):
     def __init__(self, on_position_selected):
         self.on_position_selected = on_position_selected
 
@@ -130,10 +134,7 @@ class SelectMapPositionBehaviour():
                 raise SystemExit()
 
             if event.type == pygame.MOUSEBUTTONDOWN:
-                x, y = event.pos
-                cellX = math.floor(x / constants.CELL_WIDTH)
-                cellY = math.floor(y / constants.CELL_HEIGHT)
-
+                cellX, cellY = self.get_cell_at_mouse_position(event)
                 self.on_position_selected(engine, cellX, cellY)
 
 

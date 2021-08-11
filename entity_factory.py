@@ -11,7 +11,7 @@ def A_Player(x, y, current_map):
                    [
                        components.IsPlayer(),
                        components.HealthComponent(10),
-                       components.RendererComponent("tile025.png"),
+                       components.RendererComponent("hero.png"),
                        components.InventoryComponent(5),
                        components.EquipmentComponent(
                            components.RangedWeaponComponent(
@@ -29,7 +29,7 @@ def A_Player(x, y, current_map):
 def A_Creature(x, y, index, current_map):
     creature = Actor(x, y, "Creature " + str(index),
                      [
-                         components.RendererComponent("tile123.png"),
+                         components.RendererComponent("bat.png"),
                          components.HealthComponent(10),
                          components.IsSolid()
     ],
@@ -40,7 +40,7 @@ def A_Creature(x, y, index, current_map):
 
 def A_HealingPotion(x, y, current_map):
     item = Item(x, y, "Healing Potion", [
-        components.RendererComponent("tile759.png")
+        components.RendererComponent("healing_potion.png")
     ],
         actions.HealAction(5),
         current_map)
@@ -48,7 +48,7 @@ def A_HealingPotion(x, y, current_map):
 
 def A_Dinamite(x, y, current_map):
     item = Item(x, y, "Dinamite", [
-        components.RendererComponent("tile1006.png")
+        components.RendererComponent("dinamite_pack.png")
     ],
         actions.AreaAttackAction(10, 3),
         current_map)

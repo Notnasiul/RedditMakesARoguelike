@@ -19,7 +19,7 @@ class Behaviour():
 
 class IngameInput(Behaviour):
     def evaluate(self, actor, engine):
-        engine.help_message = "arrows: move, i:inventory"
+        engine.help_message = ""
         events_list = pygame.event.get()
         for event in events_list:
             if event.type == pygame.QUIT:
@@ -27,9 +27,11 @@ class IngameInput(Behaviour):
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 x, y = event.pos
-                cellX = math.floor(x / constants.CELL_WIDTH)
-                cellY = math.floor(y / constants.CELL_HEIGHT)
-                # print('clicked on ' + str(cellX) + ' ' + str(cellY))
+                cellX = (x+0.5) // constants.CELL_WIDTH
+                cellY = (y+0.5) // constants.CELL_HEIGHT
+                cellX //= 2
+                cellY //= 2
+                print('clicked on ' + str(cellX) + ' ' + str(cellY))
                 equipment = actor.get_component(components.EquipmentComponent)
                 weapon = None
                 if event.button == 1:
@@ -60,6 +62,8 @@ class IngameInput(Behaviour):
                         actor, 1, 0)
                 if keys[pygame.K_SPACE]:
                     actor.next_action = actions.WaitAction()
+                if keys[pygame.K_LESS]:
+                    actor.next_action = actions.TakeStairsAction(actor)
                 if keys[pygame.K_g]:
                     actor.next_action = actions.PickItemAction(
                         actor, actor.x, actor.y)
@@ -100,7 +104,7 @@ class InventoryInputBehavior(Behaviour):
 
 class ExitGameBehavior(Behaviour):
     def evaluate(self, actor, engine):
-        engine.help_message = "Exit game?"
+        engine.help_message = "Exit game? Press ESC again or any other key to contine"
         events_list = pygame.event.get()
         for event in events_list:
             if event.type == pygame.QUIT:
@@ -110,6 +114,8 @@ class ExitGameBehavior(Behaviour):
                 keys = pygame.key.get_pressed()
                 if keys[pygame.K_ESCAPE]:
                     engine.in_game = False
+                else:
+                    actor.next_action = actions.ContinueGameAction(actor)
 
 
 class SelectMapPositionBehaviour():

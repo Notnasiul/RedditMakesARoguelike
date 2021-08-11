@@ -6,6 +6,23 @@ import lzma
 import pickle
 
 
+class GameWorld:
+    def __init__(self, engine, size, max_rooms, min_max_room_size, max_monsters_per_room, max_items_per_room, current_floor):
+        self.engine = engine
+        self.width, self.height = size
+        self.max_rooms = max_rooms
+        self.min_room_size = min_max_room_size[0]
+        self.max_room_size = min_max_room_size[1]
+        self.max_monsters_per_room = max_monsters_per_room
+        self.max_items_per_room = max_items_per_room
+        self.current_floor = current_floor
+
+    def generate_floor(self):
+        self.current_floor += 1
+        self.engine.current_map.create_roomed_maze(
+            self.width, self.height, self.max_rooms, self.min_room_size, self.max_room_size, self.max_monsters_per_room, self.max_items_per_room)
+
+
 class Tile:
     def __init__(self, lit_sprite, dark_sprite, blocks_path, blocks_sight):
         self.blocks_path = blocks_path
@@ -26,17 +43,19 @@ class Tile:
 
 class Map:
     def __init__(self, width, height, tileset):
-        self.width = MAP_WIDTH
-        self.height = MAP_HEIGHT
+        self.width = width
+        self.height = height
+        self.tileset = tileset 
+        self.reset()
+
+    def reset(self):
+        self.tiles = self.fill_with_solid(self.width, self.height)
         self.rooms = []
         self.actors = []
         self.items = []
-        self.tileset = tileset
-        self.tiles = self.fill_with_solid(self.width, self.height)
         self.visited = {}
         self.fov = {}
-        self.create_roomed_maze(MAP_WIDTH, MAP_HEIGHT, MAX_ROOMS,
-                                MIN_ROOM_SIZE, MAX_ROOM_SIZE)
+        self.downstairs_location = (0, 0)
 
     def update_fov(self, x, y, sight_range):
         self.fov = fov.FOV_Bresenham(x, y, sight_range, self)
@@ -138,6 +157,7 @@ class Map:
                 for x in range(0, width)]
 
     def create_cave(self):
+        self.fill_with_solid(self.width, self.height)
         start_walls = (int)(self.width * self.height * 0.3)
         for i in range(0, start_walls):
             x = random.randint(1, self.width-1)
@@ -162,8 +182,11 @@ class Map:
                         tmp_tiles[x][y] = self.tileset.floor if sum >= 5 else self.tiles.wall
             self.tiles = tmp_tiles.copy()
 
-    def create_roomed_maze(self, map_width, map_height, max_rooms, min_room_size, max_room_size):
+    def create_roomed_maze(self, map_width, map_height, max_rooms, min_room_size, max_room_size, max_monsters_per_room, max_items_per_room):
+        self.reset()
+        self.fill_with_solid(self.width, self.height)
         rooms = []
+        center_of_last_room = (0, 0)
         for r in range(max_rooms):
             w = random.randint(min_room_size, max_room_size)
             h = random.randint(min_room_size, max_room_size)
@@ -187,7 +210,17 @@ class Map:
                         self.create_vertical_tunnel(last_y, y, last_x)
                         self.create_horizontal_tunnel(last_x, x, y)
                 rooms.append(room)
+                center_of_last_room = room.center()
+                if room_count == 0:
+                    entity_factory.A_Player(
+                        center_of_last_room[0], center_of_last_room[1], self)
+
+        self.downstairs_location = center_of_last_room
+        self.tiles[center_of_last_room[0]
+                   ][center_of_last_room[1]] = self.tileset.downstairs
+
         creatureindex = 0
+
         for room in rooms:
             x, y = room.get_empty_position()
             entity_factory.A_Creature(x, y, creatureindex, self)
@@ -209,7 +242,7 @@ class Map:
 
 class Node:
     # Initialize the class
-    def __init__(self, position: (), parent: ()):
+    def __init__(self, position, parent):
         self.position = position
         self.parent = parent
         self.g = 0  # Distance to start node
@@ -262,5 +295,7 @@ class RectangularRoom:
 
 class DungeonTileSet:
     def __init__(self):
-        self.wall = Tile("wall_light.png", "wall_dark.png", True, True)
+        self.wall = Tile("wall_light_dirt.png",
+                         "wall_dark_dirt.png", True, True)
         self.floor = Tile("floor_light.png", "floor_dark.png", False, False)
+        self.downstairs = Tile("mine_door.png", "mine_door.png", False, False)

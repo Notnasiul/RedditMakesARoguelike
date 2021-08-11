@@ -86,12 +86,12 @@ class RangeAttackAction (Action):
     def perform(self, engine):
         weapon = self.rangedWeaponComponent
         if weapon is None:
-            return ActionResult(False, None)
+            return ImpossibleAction("No ranged weapon equipped")
 
         # get all objects at tilePosition
         for e in engine.current_map.actors:
             x, y = self.attackedCell
-            if distance(e.x, e.y, x, y) <= weapon.area:
+            if distance(e.x, e.y, x, y) < weapon.area:
                 engine.message_log.add_message(
                     f"{self.attacker.name} attacks {e.name} for {weapon.damage} hp", COLOR_LIGHT_MAX, True)
                 apply_damage(engine, e, weapon.damage)
@@ -173,8 +173,7 @@ class KillAction (Action):
         engine.message_log.add_message(
             f"{self.defender.name} is dead", COLOR_BLOOD, True)
         renderer = self.defender.get_component(components.RendererComponent)
-        renderer.change_image(sprites.load_sprite("tile001.png"))
-
+        renderer.change_image("blood.png")
         self.defender.remove_component(components.IsSolid)
         self.defender.add_component(components.IsDead())
         return ActionResult(True)
@@ -190,16 +189,19 @@ class BumpAction (Action):
         return ActionResult(False, ImpossibleAction())
 
 
-class PosessAction (Action):
-    def __init__(self, attacker, defender):
-        self.attacker = attacker
-        self.defender = defender
+class TakeStairsAction(Action):
+    def __init__(self, actor):
+        self.actor = actor
 
     def perform(self, engine):
-        # print("posessing: " + self.defender.name)
-        self.attacker.remove_component(components.IsPlayer)
-        self.defender.add_component(components.IsPlayer())
-        return ActionResult(True)
+        if (self.actor.x, self.actor.y) == engine.current_map.downstairs_location:
+            engine.game_world.generate_floor()
+            engine.message_log.add_message(
+                "You descend down the mine shaft.", COLOR_LIGHT_MAX, False
+            )
+            return ActionResult(True)
+        else:
+            return ActionResult(False, ImpossibleAction("There are no stairs here."))
 
 
 class HealAction(Action):
@@ -219,15 +221,23 @@ class HealAction(Action):
         return ActionResult(True)
 
 
-# MENU RELATED ACTIONS
+# EXIT MENU RELATED ACTIONS
 
 class ExitGameAction(Action):
     def __init__(self, actor):
         self.actor = actor
 
     def perform(self, engine):
-        engine.show_exit_menu = True
         engine.player.behaviour = behaviours.ExitGameBehavior()
+        return None
+
+
+class ContinueGameAction(Action):
+    def __init__(self, actor):
+        self.actor = actor
+
+    def perform(self, engine):
+        engine.player.behaviour = behaviours.IngameInput()
         return None
 
 # INVENTORY RELATED ACTIONS

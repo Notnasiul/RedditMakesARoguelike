@@ -4,11 +4,16 @@ import os
 import textwrap
 import sprites
 from constants import *
+import math
 
 
 class Renderer():
     def __init__(self):
         self.sprites = sprites.SpriteDealer()
+
+        self.base_res = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
+        self.double_res = pygame.Surface(
+            (GAME_RESOLUTION_X, GAME_RESOLUTION_Y))
 
         self.dungeon_surface = pygame.Surface(
             (MAP_WIDTH*CELL_WIDTH, MAP_HEIGHT*CELL_HEIGHT))
@@ -19,6 +24,8 @@ class Renderer():
         self.inventory_surface = pygame.Surface(
             (250, 400))
 
+        self.CURSOR = self.sprites.get_sprite("cursor.png")
+
         self.small_font = pygame.font.Font(os.path.join(
             "data", "fonts", "PressStart2P-Regular.ttf"), 8)
         self.mid_font = pygame.font.Font(os.path.join(
@@ -28,6 +35,7 @@ class Renderer():
 
     def render_game(self, engine, surface):
         surface.fill(COLOR_BLACK)
+        self.base_res.fill(COLOR_BLACK)
         self.dungeon_surface.fill(COLOR_BLACK)
 
         # DRAW MAP
@@ -37,13 +45,33 @@ class Renderer():
                 visited = (x, y) in engine.current_map.visited
                 if in_fov and not visited:
                     engine.current_map.visited[x, y] = True
+
+                visited = True
+
                 sprite_key = engine.current_map.tiles[x][y].get_tile_sprite(
-                    in_fov, visited)
+                    True, visited
+                )
                 if sprite_key:
                     sprite = self.sprites.get_sprite(sprite_key)
+                    # px = engine.player.x
+                    # py = engine.player.y
+                    # distance_to_player = math.sqrt(
+                    #     (x-px)*(x-px) + (y-py)*(y-py))
+                    # dist_mod = 1 - distance_to_player / 5
 
-                    self.dungeon_surface.blit(sprite, (x * CELL_WIDTH,
-                                                       y * CELL_HEIGHT))
+                    lit = pygame.Surface((CELL_HEIGHT, CELL_WIDTH))
+                    lit.blit(sprite, (0, 0))
+                    # dist_mod = 1 - max(0.25, min(1, distance_to_player / 5))
+                    lit_mod = 1 if in_fov else 0.2 if visited else 0
+                    if lit_mod < 1:
+                        lit.fill((lit_mod*255, lit_mod*128, lit_mod*64, 255),
+                                 special_flags=pygame.BLEND_MULT)
+                    else:
+                        lit = sprite
+                    self.dungeon_surface.blit(lit, (x * CELL_WIDTH,
+                                                    y * CELL_HEIGHT))
+                    # self.dungeon_surface.blit(sprite, (x * CELL_WIDTH,
+                    #                                  y * CELL_HEIGHT))
 
         # DRAW ITEMS
         for item in engine.current_map.items:
@@ -64,31 +92,38 @@ class Renderer():
                         self.dungeon_surface.blit(sprite, (actor.x * CELL_WIDTH,
                                                            actor.y * CELL_HEIGHT))
 
-        surface.blit(self.dungeon_surface, (0, 0))
-        self.render_UI(engine, surface)
+        self.base_res.blit(self.dungeon_surface, (0, 0))
+        self.render_UI(engine, self.base_res)
+        mx, my = pygame.mouse.get_pos()
+        self.base_res.blit(self.CURSOR, (mx/2-8, my/2-8))
+
+        pygame.transform.scale(
+            self.base_res, (GAME_RESOLUTION_X, GAME_RESOLUTION_Y), self.double_res)
+        surface.blit(self.double_res, (0, 0))
 
         pygame.display.flip()
 
     def render_UI(self, engine, surface):
         # Health bar
         health = engine.player.get_component(components.HealthComponent)
-        self.render_bar(surface, 10, 475, health.hp, health.max_hp, "HP", 200, 25,
+        self.render_bar(surface, 10, GAME_HEIGHT-100, health.hp, health.max_hp, "HP", 200, 25,
                         2, COLOR_DARK_MAX, COLOR_LIGHT_MIN, COLOR_BLACK)
 
         # Message Log
-        self.render_message_log(engine, surface, 10, 510, 750, 80)
+        self.render_message_log(engine, surface, 10,
+                                GAME_HEIGHT-70, GAME_WIDTH, 50)
 
         # Help
         if engine.help_message is not "":
             label = self.small_font.render(
                 f"{engine.help_message}", True, COLOR_DARK_MAX)
-            lw = label.get_width()
+            lw = label.get_width() * 1.5
             lh = label.get_height()
             x = GAME_WIDTH/2 - lw/2
             y = GAME_HEIGHT - lh*2.5
             message_area = pygame.draw.rect(surface, COLOR_LIGHT_MED,
-                                            pygame.Rect(x, y, label.get_width()*1.5, label.get_height()*2))
-            surface.blit(label, (x + message_area.width/2 - lw /
+                                            pygame.Rect(x, y, lw, lh*2))
+            surface.blit(label, (x + message_area.width/2 - label.get_width() /
                                  2, y + message_area.height/2 - lh/2))
 
         if engine.show_inventory:
@@ -150,7 +185,7 @@ class Renderer():
 
     def render_main_menu(self, surface):
         title_text = self.large_font.render(
-            "Dead Men Mine", True, COLOR_LIGHT_MAX)
+            "Howling Dog Mine", True, COLOR_LIGHT_MAX)
         new_game_text = self.mid_font.render(
             "1) New game", True, COLOR_LIGHT_MAX)
         continue_game_text = self.mid_font.render(
@@ -158,11 +193,11 @@ class Renderer():
 
         surface.fill(COLOR_BLACK)
         surface.blit(
-            title_text, (GAME_WIDTH//2 - title_text.get_rect().centerx, GAME_HEIGHT//2 - title_text.get_rect().centery))
+            title_text, (GAME_RESOLUTION_X//2 - title_text.get_rect().centerx, GAME_RESOLUTION_Y//2 - title_text.get_rect().centery))
         surface.blit(
-            new_game_text, (GAME_WIDTH//2 -
-                            new_game_text.get_rect().centerx, GAME_HEIGHT//2 + 150))
+            new_game_text, (GAME_RESOLUTION_X//2 -
+                            new_game_text.get_rect().centerx, GAME_RESOLUTION_Y//2 + 150))
         surface.blit(
-            continue_game_text, (GAME_WIDTH//2 -
-                                 continue_game_text.get_rect().centerx, GAME_HEIGHT//2 + 175))
+            continue_game_text, (GAME_RESOLUTION_X//2 -
+                                 continue_game_text.get_rect().centerx, GAME_RESOLUTION_Y//2 + 175))
         pygame.display.flip()

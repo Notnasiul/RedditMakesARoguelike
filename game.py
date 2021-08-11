@@ -13,10 +13,13 @@ from renderer import Renderer
 
 class Game():
     def __init__(self):
+        import os
+        os.environ['SDL_VIDEO_CENTERED'] = '1'
         pygame.init()
-        pygame.display.set_caption("Reddit makes a roguelike")
+        pygame.display.set_caption("Howling Dog's Mine")
+        pygame.mouse.set_visible(False)
         self.main_surface = pygame.display.set_mode(
-            (GAME_WIDTH, GAME_HEIGHT))
+            (GAME_RESOLUTION_X, GAME_RESOLUTION_Y))
         self.renderer = Renderer()
         self.clock = pygame.time.Clock()
 
@@ -27,11 +30,7 @@ class Game():
                 assert isinstance(self.engine, Engine)
 
     def start_new_game(self):
-        current_map = Map(MAP_WIDTH, MAP_HEIGHT, DungeonTileSet())
-        x, y = current_map.rooms[0].get_empty_position()
-        player = entity_factory.A_Player(x, y, current_map)
-        self.engine = Engine(current_map)
-        self.engine.player = player
+        self.engine = Engine()
         self.engine.message_log.add_message(
             "Welcome!", COLOR_TRUE_WHITE, False)
 

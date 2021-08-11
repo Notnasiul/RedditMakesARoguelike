@@ -2,7 +2,7 @@ import entity_factory
 import random
 
 max_items_by_floor = [
-    (1, 5),
+    (1, 1),
     (4, 2)
 ]
 
@@ -13,12 +13,12 @@ max_monsters_by_floor = [
 ]
 
 monster_chances = {
-    0: [(entity_factory.A_Creature, 100)],
-    3: [(entity_factory.A_Creature, 100)]
+    0: [(entity_factory.A_Bat, 100)],
+    3: [(entity_factory.A_Bat, 100)]
 }
 
 items_chances = {
-    0: [(entity_factory.A_HealingPotion, 50), (entity_factory.A_Dinamite, 50)],
+    0: [(entity_factory.A_HealingPotion, 80), (entity_factory.A_Dinamite, 20)],
     3: [(entity_factory.A_HealingPotion, 20), (entity_factory.A_Dinamite, 80)],
 }
 
@@ -86,9 +86,6 @@ def create_roomed_maze(map, map_width, map_height, max_rooms, min_room_size, max
                     create_horizontal_tunnel(map, last_x, x, y)
             rooms.append(room)
             center_of_last_room = room.center()
-            if room_count == 0:
-                entity_factory.A_Player(
-                    center_of_last_room[0], center_of_last_room[1], map)
 
     map.downstairs_location = center_of_last_room
     map.tiles[center_of_last_room[0]

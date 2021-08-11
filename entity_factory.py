@@ -26,8 +26,8 @@ def A_Player(x, y, current_map):
     return player
 
 
-def A_Creature(x, y, index, current_map):
-    creature = Actor(x, y, "Creature " + str(index),
+def A_Bat(x, y, index, current_map):
+    creature = Actor(x, y, "Bat " + str(index),
                      [
                          components.RendererComponent("bat.png"),
                          components.HealthComponent(10),

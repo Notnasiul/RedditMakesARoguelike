@@ -20,6 +20,15 @@ class GameWorld:
         self.current_floor += 1
         self.engine.current_map.build_level(
             self.width, self.height, self.max_rooms, self.min_room_size, self.max_room_size, self.current_floor)
+        if self.current_floor == 1:
+            x, y = self.engine.current_map.rooms[0].get_empty_position()
+            self.engine.player = entity_factory.A_Player(
+                x, y, self.engine.current_map)
+        else:
+            x, y = self.engine.current_map.rooms[0].get_empty_position()
+            self.engine.player.x, self.engine.player.y = x, y
+            self.engine.player.current_map = self.engine.current_map
+            self.engine.current_map.actors.append(self.engine.player)
 
 
 class Tile:
@@ -102,7 +111,7 @@ class Map:
             dx, dy = delta
             xx = x + dx
             yy = y + dy
-            if 0 < xx and xx < width and 0 < yy and 0 < height:
+            if 0 < xx and xx < self.width and 0 < yy and 0 < self.height:
                 neighbours.append(self.tiles[x+dx][y+dy])
 
     def astar_search(self, start, end):

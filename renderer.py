@@ -46,7 +46,7 @@ class Renderer():
                 if in_fov and not visited:
                     engine.current_map.visited[x, y] = True
 
-                visited = True
+                #visited = True
 
                 sprite_key = engine.current_map.tiles[x][y].get_tile_sprite(
                     True, visited
@@ -106,12 +106,12 @@ class Renderer():
     def render_UI(self, engine, surface):
         # Health bar
         health = engine.player.get_component(components.HealthComponent)
-        self.render_bar(surface, 10, GAME_HEIGHT-100, health.hp, health.max_hp, "HP", 200, 25,
+        self.render_bar(surface, 8, GAME_HEIGHT-94, health.hp, health.max_hp, "HP", 200, 25,
                         2, COLOR_DARK_MAX, COLOR_LIGHT_MIN, COLOR_BLACK)
 
         # Message Log
-        self.render_message_log(engine, surface, 10,
-                                GAME_HEIGHT-70, GAME_WIDTH, 50)
+        self.render_message_log(engine, surface, 8,
+                                GAME_HEIGHT-64, GAME_WIDTH, 50)
 
         # Help
         if engine.help_message is not "":

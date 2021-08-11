@@ -110,7 +110,7 @@ class AreaAttackAction (Action):
     def perform(self, engine):
         for e in engine.current_map.actors:
             x, y = self.x, self.y
-            if distance(e.x, e.y, x, y) <= self.radius:
+            if e.is_alive and distance(e.x, e.y, x, y) <= self.radius:
                 # return ActionResult(False, DamageAction(None, e, self.damage))
                 apply_damage(engine, e, self.damage)
         return ActionResult(True)
@@ -122,7 +122,6 @@ def apply_damage(engine, defender, damage):
     health = defender.get_component(components.HealthComponent)
     if health is None:
         return
-
     health.hp = max(0, health.hp - damage)
     engine.message_log.add_message(
         f"{defender.name} was hit, {damage}", COLOR_ORANGE, True)
@@ -249,6 +248,7 @@ class OpenInventory(Action):
         self.actor = actor
 
     def perform(self, engine):
+        print("opening inventory")
         inventoryComponent = self.actor.get_component(
             components.InventoryComponent)
         if inventoryComponent is None:
@@ -264,6 +264,7 @@ class CloseInventory(Action):
         self.actor = actor
 
     def perform(self, engine):
+        print("clowing inventory")
         engine.show_inventory = False
         engine.player.behaviour = behaviours.IngameInput()
         return None

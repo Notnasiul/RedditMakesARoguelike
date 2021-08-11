@@ -8,11 +8,11 @@ class Engine():
     def __init__(self):
         self.message_log = MessageLog()
         self.current_actor = 0
+        self.player = None
         self.current_map = Map(MAP_WIDTH, MAP_HEIGHT, DungeonTileSet())
         self.game_world = GameWorld(
             self, (MAP_WIDTH, MAP_HEIGHT), MAX_ROOMS, (MIN_ROOM_SIZE, MAX_ROOM_SIZE), 0)
         self.game_world.generate_floor()
-        self.player = self.current_map.actors[0]
         self.help_message = ""
         self.show_inventory = False
         self.in_game = True

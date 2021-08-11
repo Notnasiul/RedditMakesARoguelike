@@ -35,7 +35,6 @@ class IngameInput(Behaviour):
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 cellX, cellY = self.get_cell_at_mouse_position(event)
-                print('clicked on ' + str(cellX) + ' ' + str(cellY))
                 equipment = actor.get_component(components.EquipmentComponent)
                 weapon = None
                 if event.button == 1:

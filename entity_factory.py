@@ -30,10 +30,22 @@ def A_Bat(x, y, index, current_map):
     creature = Actor(x, y, "Bat " + str(index),
                      [
                          components.RendererComponent("bat.png"),
-                         components.HealthComponent(10),
+                         components.HealthComponent(3),
                          components.IsSolid()
     ],
         behaviours.RandomWalkBehaviour(),
+        current_map)
+    return creature
+
+
+def A_Coyote(x, y, index, current_map):
+    creature = Actor(x, y, "Coyote " + str(index),
+                     [
+                         components.RendererComponent("coyote.png"),
+                         components.HealthComponent(5),
+                         components.IsSolid()
+    ],
+        behaviours.ChasingBehaviour(),
         current_map)
     return creature
 

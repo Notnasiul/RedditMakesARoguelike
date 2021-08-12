@@ -106,12 +106,15 @@ class Renderer():
     def render_UI(self, engine, surface):
         # Health bar
         health = engine.player.get_component(components.HealthComponent)
-        self.render_bar(surface, 8, GAME_HEIGHT-94, health.hp, health.max_hp, "HP", 200, 25,
+        self.render_bar(surface, 8, GAME_HEIGHT-84, health.hp, health.max_hp, "HP", 200, 15,
                         2, COLOR_DARK_MAX, COLOR_LIGHT_MIN, COLOR_BLACK)
 
         # Message Log
         self.render_message_log(engine, surface, 8,
                                 GAME_HEIGHT-64, GAME_WIDTH, 50)
+
+        if engine.show_inventory:
+            self.render_actor_inventory(engine, surface, engine.player)
 
         # Help
         if engine.help_message is not "":
@@ -123,11 +126,10 @@ class Renderer():
             y = GAME_HEIGHT - lh*2.5
             message_area = pygame.draw.rect(surface, COLOR_LIGHT_MED,
                                             pygame.Rect(x, y, lw, lh*2))
+            pygame.draw.rect(surface, COLOR_DARK_MIN,
+                             pygame.Rect(x, y, lw, lh*2), 1)
             surface.blit(label, (x + message_area.width/2 - label.get_width() /
                                  2, y + message_area.height/2 - lh/2))
-
-        if engine.show_inventory:
-            self.render_actor_inventory(engine, surface, engine.player)
 
     def render_actor_inventory(self, engine, surface, actor):
         inventoryComponent = actor.get_component(components.InventoryComponent)
@@ -156,13 +158,17 @@ class Renderer():
                     f"({item_key}) {item.name}", True, COLOR_DARK_MIN)
                 self.inventory_surface.blit(entry, (5, 40+i*12))
 
+        pygame.draw.rect(self.inventory_surface, COLOR_DARK_MAX,
+                         self.inventory_surface.get_rect(),  1)
         surface.blit(self.inventory_surface, (GAME_WIDTH-window_width, 0))
 
     def render_bar(self, surface, x, y, value, max_value, text, width, height, border, bkg_color, fg_color, txt_color):
+
         pygame.draw.rect(surface, bkg_color, pygame.Rect(x, y, width, height))
-        pygame.draw.rect(surface, fg_color, pygame.Rect(
-            x+border, y+border,
-            width * (value/max_value) - border*2, height-border*2))
+        if value > 0:
+            pygame.draw.rect(surface, fg_color, pygame.Rect(
+                x+border, y+border,
+                width * (value/max_value) - border*2, height-border*2))
 
         label = self.small_font.render(
             f"{text}: {value}/{max_value}", True, txt_color)

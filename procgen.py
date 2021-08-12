@@ -3,18 +3,18 @@ import random
 
 max_items_by_floor = [
     (1, 1),
-    (4, 2)
+    (3, 2)
 ]
 
 max_monsters_by_floor = [
     (1, 2),
-    (4, 3),
+    (3, 3),
     (6, 5)
 ]
 
 monster_chances = {
-    0: [(entity_factory.A_Bat, 100)],
-    3: [(entity_factory.A_Bat, 100)]
+    0: [(entity_factory.A_Bat, 90), (entity_factory.A_Coyote, 10)],
+    3: [(entity_factory.A_Bat, 70), (entity_factory.A_Coyote, 30)],
 }
 
 items_chances = {

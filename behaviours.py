@@ -152,7 +152,6 @@ class ChasingBehaviour():
         self.target = None
 
     def evaluate(self, actor, engine):
-        # print("evaluating " + actor.name)
         path = engine.current_map.astar_search(
             (actor.x, actor.y),
             (engine.player.x, engine.player.y)
@@ -163,6 +162,10 @@ class ChasingBehaviour():
 
         dx = path[0][0] - actor.x
         dy = path[0][1] - actor.y
+
+        if len(path) > 5:
+            dx = random.randint(-1, 1)
+            dy = 0 if dx != 0 else random.randint(-1, 1)
 
         actor.next_action = actions.WalkAction(
             actor,

@@ -32,7 +32,7 @@ class Game():
     def start_new_game(self):
         self.engine = Engine()
         self.engine.message_log.add_message(
-            "Welcome!", COLOR_TRUE_WHITE, False)
+            "Welcome to the mine!", COLOR_TRUE_WHITE, False)
 
     def begin_game(self):
         self.run()
